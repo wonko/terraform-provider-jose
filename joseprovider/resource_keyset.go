@@ -88,8 +88,15 @@ func CreateKeyset(ctx context.Context, d *schema.ResourceData, m interface{}) di
 		return diag.FromErr(err)
 	}
 
-	d.Set("public_key", pubkey)
-	d.Set("private_key", privkey)
+	err = d.Set("public_key", pubkey)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("private_key", privkey)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	d.SetId(kid)
 
 	return diags
