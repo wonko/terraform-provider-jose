@@ -16,6 +16,9 @@ import (
 
 // Had to copy-paste this due to the wrong import paths defined due to the move from square => go-jose
 
+// See https://github.com/go-jose/go-jose/blob/master/jose-util/generator/generate.go
+// and https://github.com/go-jose/go-jose/blob/master/jose-util/generate.go
+
 // NewSigningKey generates a keypair for corresponding SignatureAlgorithm.
 func NewSigningKey(alg jose.SignatureAlgorithm, bits int) (crypto.PublicKey, crypto.PrivateKey, error) {
 	switch alg {
