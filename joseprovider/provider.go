@@ -8,7 +8,7 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"jose_keyset": resourceKeyset(),
+			"jose_keyset": resourceKeypair(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{},
 	}

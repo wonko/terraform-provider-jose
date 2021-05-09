@@ -8,10 +8,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceKeyset() *schema.Resource {
+func resourceKeypair() *schema.Resource {
 	return &schema.Resource{
-		Description:   "The resource `jose` generates a JWKS keypair",
-		CreateContext: CreateKeyset,
+		Description:   "The resource `jose_keypair` generates a keypair to be used for signing or encryption",
+		CreateContext: CreateKeypair,
 		Read:          schema.Noop,
 		Delete:        schema.RemoveFromState,
 
@@ -75,7 +75,7 @@ func resourceKeyset() *schema.Resource {
 	}
 }
 
-func CreateKeyset(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func CreateKeypair(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	use := d.Get("use").(string)
