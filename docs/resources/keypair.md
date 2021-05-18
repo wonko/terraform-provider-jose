@@ -3,12 +3,12 @@
 page_title: "jose_keypair Resource - terraform-provider-jose"
 subcategory: ""
 description: |-
-  The resource jose generates a JWKS keypair
+  The resource jose_keypair generates a keypair to be used for signing or encryption
 ---
 
 # jose_keypair (Resource)
 
-The resource `jose` generates a JWKS keypair
+The resource `jose_keypair` generates a keypair to be used for signing or encryption
 
 
 
@@ -25,6 +25,8 @@ The resource `jose` generates a JWKS keypair
 
 - **id** (String) Generated key id (kid).
 - **private_key** (String) Generated private key
+- **private_key_pem** (String) Generated private key
 - **public_key** (String) Generated public key
+- **public_key_pem** (String) Generated private key
 
 
