@@ -12,7 +12,7 @@ much a copy-paste with slight adaptions to fit the provider framework.
 Example usage:
 
 ```
-resource "jose_keyset" "default" {
+resource "jose_keypair" "default" {
     use = "sig"
     alg = "RS256"
     size = 2048

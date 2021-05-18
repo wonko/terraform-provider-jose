@@ -11,7 +11,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-jose/go-jose"
+	"gopkg.in/square/go-jose.v2"
 )
 
 // Had to copy-paste this due to the wrong import paths defined due to the move from square => go-jose
@@ -110,10 +110,7 @@ func NewEncryptionKey(alg jose.KeyAlgorithm, bits int) (crypto.PublicKey, crypto
 	}
 }
 
-func generateKey(use string, alg string, size int) (pubJSON string, privJSON string, kid string, err error) {
-	var privKey crypto.PrivateKey
-	var pubKey crypto.PublicKey
-
+func generateKey(use string, alg string, size int) (pubJSON string, privJSON string, kid string, pubKey crypto.PublicKey, privKey crypto.PrivateKey, err error) {
 	switch use {
 	case "sig":
 		pubKey, privKey, err = NewSigningKey(jose.SignatureAlgorithm(alg), size)
@@ -123,17 +120,17 @@ func generateKey(use string, alg string, size int) (pubJSON string, privJSON str
 		// According to RFC 7517 section-8.2.  This is unlikely to change in the
 		// near future. If it were, new values could be found in the registry under
 		// "JSON Web Key Use": https://www.iana.org/assignments/jose/jose.xhtml
-		return "", "", "", fmt.Errorf("invalid key use.  Must be 'sig' or 'enc'")
+		return "", "", "", nil, nil, fmt.Errorf("invalid key use.  Must be 'sig' or 'enc'")
 	}
 	if err != nil {
-		return "", "", "", fmt.Errorf("error when generating keyset: %v", err)
+		return "", "", "", nil, nil, fmt.Errorf("error when generating keypair: %v", err)
 	}
 
 	priv := jose.JSONWebKey{Key: privKey, KeyID: kid, Algorithm: alg, Use: use}
 	// Generate a canonical kid based on RFC 7638
 	thumb, err := priv.Thumbprint(crypto.SHA256)
 	if err != nil {
-		return "", "", "", fmt.Errorf("unable to compute thumbprint: %v", err)
+		return "", "", "", nil, nil, fmt.Errorf("unable to compute thumbprint: %v", err)
 	}
 
 	kid = base64.URLEncoding.EncodeToString(thumb)
@@ -145,18 +142,18 @@ func generateKey(use string, alg string, size int) (pubJSON string, privJSON str
 	pub := jose.JSONWebKey{Key: pubKey, KeyID: kid, Algorithm: alg, Use: use}
 
 	if priv.IsPublic() || !pub.IsPublic() || !priv.Valid() || !pub.Valid() {
-		return "", "", "", errors.New("invalid keys were generated")
+		return "", "", "", nil, nil, errors.New("invalid keys were generated")
 	}
 
 	privJSONbs, err := priv.MarshalJSON()
 	if err != nil {
-		return "", "", "", errors.New("failed to marshal private key to JSON")
+		return "", "", "", nil, nil, errors.New("failed to marshal private key to JSON")
 	}
 
 	pubJSONbs, err := pub.MarshalJSON()
 	if err != nil {
-		return "", "", "", errors.New("failed to marshal public key to JSON")
+		return "", "", "", nil, nil, errors.New("failed to marshal public key to JSON")
 	}
 
-	return string(pubJSONbs), string(privJSONbs), kid, nil
+	return string(pubJSONbs), string(privJSONbs), kid, pubKey, privKey, nil
 }

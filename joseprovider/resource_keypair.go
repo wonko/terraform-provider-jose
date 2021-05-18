@@ -2,10 +2,13 @@ package joseprovider
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 
-	"github.com/go-jose/go-jose"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"gopkg.in/square/go-jose.v2"
 )
 
 func resourceKeypair() *schema.Resource {
@@ -66,6 +69,16 @@ func resourceKeypair() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"public_key_pem": {
+				Description: "Generated private key",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"private_key_pem": {
+				Description: "Generated private key",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"id": {
 				Description: "Generated key id (kid).",
 				Type:        schema.TypeString,
@@ -82,7 +95,7 @@ func CreateKeypair(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	alg := d.Get("alg").(string)
 	size := d.Get("size").(int)
 
-	pubkey, privkey, kid, err := generateKey(use, alg, size)
+	pubkey, privkey, kid, raw_pubkey, raw_privkey, err := generateKey(use, alg, size)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -96,6 +109,30 @@ func CreateKeypair(ctx context.Context, d *schema.ResourceData, m interface{}) d
 	err = d.Set("private_key", privkey)
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	// shortcutting some other alg
+	if alg == "RS256" {
+		pubPEM := pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "RSA PUBLIC KEY",
+				Bytes: x509.MarshalPKCS1PublicKey(raw_pubkey.(*rsa.PublicKey)),
+			},
+		)
+		keyPEM := pem.EncodeToMemory(
+			&pem.Block{
+				Type:  "RSA PRIVATE KEY",
+				Bytes: x509.MarshalPKCS1PrivateKey(raw_privkey.(*rsa.PrivateKey)),
+			},
+		)
+		err = d.Set("public_key_pem", string(pubPEM))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		err = d.Set("private_key_pem", string(keyPEM))
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	d.SetId(kid)
 
