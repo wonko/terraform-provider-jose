@@ -2,10 +2,9 @@ package joseprovider
 
 import (
 	"context"
-
-	"github.com/go-jose/go-jose"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	jose "gopkg.in/go-jose/go-jose.v2"
 )
 
 func resourceKeyset() *schema.Resource {
@@ -66,6 +65,16 @@ func resourceKeyset() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"public_key_pem": {
+				Description: "Generated public key (PEM formatted)",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"private_key_pem": {
+				Description: "Generated private key (PEM formatted)",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"id": {
 				Description: "Generated key id (kid).",
 				Type:        schema.TypeString,
@@ -88,15 +97,26 @@ func CreateKeyset(ctx context.Context, d *schema.ResourceData, m interface{}) di
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("public_key", pubkey)
+	err = d.Set("public_key", pubkey["json"])
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("private_key", privkey)
+	err = d.Set("private_key", privkey["json"])
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	err = d.Set("public_key_pem", pubkey["pem"])
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("private_key_pem", privkey["pem"])
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	d.SetId(kid)
 
 	return diags
