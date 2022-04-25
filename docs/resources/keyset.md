@@ -17,14 +17,16 @@ The resource `jose` generates a JWKS keypair
 
 ### Optional
 
-- **alg** (String) The algorithm to use. Should be one of 'EdDSA', 'ES256', 'ES384', 'ES512', 'RS256' (default), 'RS384', 'RS512', 'PS256', 'PS384', 'PS512'  for verification or one of 'RSA1_5', 'RSA-OAEP', 'RSA-OAEP-256', 'ECDH-ES', 'ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW' for encryption.
-- **size** (Number) Key size in bits (e.g. 2048 if generating an RSA key). Default is 4096
-- **use** (String) Desired public key usage (use header), one of [enc sig]. Defaults to 'sig'
+- `alg` (String) The algorithm to use. Should be one of 'EdDSA', 'ES256', 'ES384', 'ES512', 'RS256' (default), 'RS384', 'RS512', 'PS256', 'PS384', 'PS512'  for verification or one of 'RSA1_5', 'RSA-OAEP', 'RSA-OAEP-256', 'ECDH-ES', 'ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW' for encryption.
+- `size` (Number) Key size in bits (e.g. 2048 if generating an RSA key). Default is 4096
+- `use` (String) Desired public key usage (use header), one of [enc sig]. Defaults to 'sig'
 
 ### Read-Only
 
-- **id** (String) Generated key id (kid).
-- **private_key** (String) Generated private key
-- **public_key** (String) Generated public key
+- `id` (String) Generated key id (kid).
+- `private_key` (String) Generated private key
+- `private_key_pem` (String) Generated private key (PEM formatted)
+- `public_key` (String) Generated public key
+- `public_key_pem` (String) Generated public key (PEM formatted)
 
 
