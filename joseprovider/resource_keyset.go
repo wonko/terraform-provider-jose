@@ -97,22 +97,22 @@ func CreateKeyset(ctx context.Context, d *schema.ResourceData, m interface{}) di
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("public_key", pubkey["json"])
+	err = d.Set("public_key", pubkey.Json)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("private_key", privkey["json"])
+	err = d.Set("private_key", privkey.Json)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("public_key_pem", pubkey["pem"])
+	err = d.Set("public_key_pem", pubkey.Pem)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("private_key_pem", privkey["pem"])
+	err = d.Set("private_key_pem", privkey.Pem)
 	if err != nil {
 		return diag.FromErr(err)
 	}
