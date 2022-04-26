@@ -111,7 +111,12 @@ func NewEncryptionKey(alg jose.KeyAlgorithm, bits int) (crypto.PublicKey, crypto
 	}
 }
 
-func generateKey(use string, alg string, size int) (publicKeyFormats map[string]string, privateKeyFormats map[string]string, kid string, err error) {
+type KeyFormat struct {
+	Json string
+	Pem  string
+}
+
+func generateKey(use string, alg string, size int) (publicKeyFormats KeyFormat, privateKeyFormats KeyFormat, kid string, err error) {
 	var privKey crypto.PrivateKey
 	var pubKey crypto.PublicKey
 
@@ -124,17 +129,17 @@ func generateKey(use string, alg string, size int) (publicKeyFormats map[string]
 		// According to RFC 7517 section-8.2.  This is unlikely to change in the
 		// near future. If it were, new values could be found in the registry under
 		// "JSON Web Key Use": https://www.iana.org/assignments/jose/jose.xhtml
-		return nil, nil, "", fmt.Errorf("invalid key use.  Must be 'sig' or 'enc'")
+		return publicKeyFormats, privateKeyFormats, "", fmt.Errorf("invalid key use.  Must be 'sig' or 'enc'")
 	}
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("error when generating keyset: %v", err)
+		return publicKeyFormats, privateKeyFormats, "", fmt.Errorf("error when generating keyset: %v", err)
 	}
 
 	priv := jose.JSONWebKey{Key: privKey, KeyID: kid, Algorithm: alg, Use: use}
 	// Generate a canonical kid based on RFC 7638
 	thumb, err := priv.Thumbprint(crypto.SHA256)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("unable to compute thumbprint: %v", err)
+		return publicKeyFormats, privateKeyFormats, "", fmt.Errorf("unable to compute thumbprint: %v", err)
 	}
 
 	kid = base64.URLEncoding.EncodeToString(thumb)
@@ -146,32 +151,32 @@ func generateKey(use string, alg string, size int) (publicKeyFormats map[string]
 	pub := jose.JSONWebKey{Key: pubKey, KeyID: kid, Algorithm: alg, Use: use}
 
 	if priv.IsPublic() || !pub.IsPublic() || !priv.Valid() || !pub.Valid() {
-		return nil, nil, "", errors.New("invalid keys were generated")
+		return publicKeyFormats, privateKeyFormats, "", errors.New("invalid keys were generated")
 	}
 
 	privJSONbs, err := priv.MarshalJSON()
 	if err != nil {
-		return nil, nil, "", errors.New("failed to marshal private key to JSON")
+		return publicKeyFormats, privateKeyFormats, "", errors.New("failed to marshal private key to JSON")
 	}
 
 	pubJSONbs, err := pub.MarshalJSON()
 	if err != nil {
-		return nil, nil, "", errors.New("failed to marshal public key to JSON")
+		return publicKeyFormats, privateKeyFormats, "", errors.New("failed to marshal public key to JSON")
 	}
 
-	publicKeyFormats["json"] = string(pubJSONbs)
-	publicKeyFormats["pem"], err = exportPublicKeyAsPEM(pubKey)
+	publicKeyFormats.Json = string(pubJSONbs)
+	publicKeyFormats.Pem, err = exportPublicKeyAsPEM(pubKey)
 	if err != nil {
-		return nil, nil, "", err
+		return publicKeyFormats, privateKeyFormats, "", err
 	}
 
-	privateKeyFormats["json"] = string(privJSONbs)
-	privateKeyFormats["pem"], err = exportPrivateKeyAsPemStr(privKey)
+	privateKeyFormats.Json = string(privJSONbs)
+	privateKeyFormats.Pem, err = exportPrivateKeyAsPemStr(privKey)
 	if err != nil {
-		return nil, nil, "", err
+		return publicKeyFormats, privateKeyFormats, "", err
 	}
 
-	return publicKeyFormats, privateKeyFormats, kid, nil
+	return publicKeyFormats, privateKeyFormats, "", nil
 }
 
 func exportPrivateKeyAsPemStr(privateKey interface{}) (string, error) {
