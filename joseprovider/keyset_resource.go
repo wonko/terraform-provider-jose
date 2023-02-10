@@ -2,17 +2,50 @@ package joseprovider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	jose "gopkg.in/go-jose/go-jose.v2"
 )
 
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource = &keysetResource{}
+)
+
+func NewKeysetResource() resource.Resource {
+	return &keysetResource{}
+}
+
+type keysetResource struct{}
+
+func (r *keysetResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_keyset"
+}
+
+func (r *keysetResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{}
+}
+
+func (r *keysetResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+}
+
+func (r *keysetResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+}
+
+func (r *keysetResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+}
+
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *keysetResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+}
+
 func resourceKeyset() *schema.Resource {
 	return &schema.Resource{
-		Description:   "The resource `jose` generates a JWKS keypair",
-		CreateContext: CreateKeyset,
-		Read:          schema.Noop,
-		Delete:        schema.RemoveFromState,
+		Description:          "The resource `jose` generates a JWKS keypair",
+		CreateContext:        CreateKeyset,
+		ReadWithoutTimeout:   schema.Noop,
+		DeleteWithoutTimeout: schema.RemoveFromState,
 
 		Schema: map[string]*schema.Schema{
 			"use": {
