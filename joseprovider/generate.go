@@ -12,7 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	jose "gopkg.in/go-jose/go-jose.v2"
+	jose "github.com/go-jose/go-jose/v3"
 )
 
 // Had to copy-paste this due to the wrong import paths defined due to the move from square => go-jose

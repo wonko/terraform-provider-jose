@@ -3,8 +3,8 @@ module github.com/wonko/terraform-provider-jose
 go 1.18
 
 require (
+	github.com/go-jose/go-jose/v3 v3.0.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.6.1
-	gopkg.in/go-jose/go-jose.v2 v2.5.1
 )
 
 require (
@@ -42,7 +42,6 @@ require (
 	google.golang.org/genproto v0.0.0-20200711021454-869866162049 // indirect
 	google.golang.org/grpc v1.32.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 )
 
 //replace github.com/square/go-jose => github.com/go-jose/go-jose v0.0.0-20200630053402-0a67ce9b0693
