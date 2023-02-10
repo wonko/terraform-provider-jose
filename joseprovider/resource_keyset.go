@@ -2,9 +2,9 @@ package joseprovider
 
 import (
 	"context"
+	jose "github.com/go-jose/go-jose/v3"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	jose "gopkg.in/go-jose/go-jose.v2"
 )
 
 func resourceKeyset() *schema.Resource {
