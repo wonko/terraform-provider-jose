@@ -7,11 +7,12 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
-
-	"gopkg.in/square/go-jose.v2"
+	jose "github.com/go-jose/go-jose/v3"
 )
 
 // Had to copy-paste this due to the wrong import paths defined due to the move from square => go-jose
@@ -110,7 +111,15 @@ func NewEncryptionKey(alg jose.KeyAlgorithm, bits int) (crypto.PublicKey, crypto
 	}
 }
 
-func generateKey(use string, alg string, size int) (pubJSON string, privJSON string, kid string, pubKey crypto.PublicKey, privKey crypto.PrivateKey, err error) {
+type KeyFormat struct {
+	Json string
+	Pem  string
+}
+
+func generateKey(use string, alg string, size int) (publicKeyFormats KeyFormat, privateKeyFormats KeyFormat, kid string, err error) {
+	var privKey crypto.PrivateKey
+	var pubKey crypto.PublicKey
+
 	switch use {
 	case "sig":
 		pubKey, privKey, err = NewSigningKey(jose.SignatureAlgorithm(alg), size)
@@ -120,17 +129,17 @@ func generateKey(use string, alg string, size int) (pubJSON string, privJSON str
 		// According to RFC 7517 section-8.2.  This is unlikely to change in the
 		// near future. If it were, new values could be found in the registry under
 		// "JSON Web Key Use": https://www.iana.org/assignments/jose/jose.xhtml
-		return "", "", "", nil, nil, fmt.Errorf("invalid key use.  Must be 'sig' or 'enc'")
+		return publicKeyFormats, privateKeyFormats, "", fmt.Errorf("invalid key use.  Must be 'sig' or 'enc'")
 	}
 	if err != nil {
-		return "", "", "", nil, nil, fmt.Errorf("error when generating keypair: %v", err)
+		return publicKeyFormats, privateKeyFormats, "", fmt.Errorf("error when generating keyset: %v", err)
 	}
 
 	priv := jose.JSONWebKey{Key: privKey, KeyID: kid, Algorithm: alg, Use: use}
 	// Generate a canonical kid based on RFC 7638
 	thumb, err := priv.Thumbprint(crypto.SHA256)
 	if err != nil {
-		return "", "", "", nil, nil, fmt.Errorf("unable to compute thumbprint: %v", err)
+		return publicKeyFormats, privateKeyFormats, "", fmt.Errorf("unable to compute thumbprint: %v", err)
 	}
 
 	kid = base64.URLEncoding.EncodeToString(thumb)
@@ -142,18 +151,87 @@ func generateKey(use string, alg string, size int) (pubJSON string, privJSON str
 	pub := jose.JSONWebKey{Key: pubKey, KeyID: kid, Algorithm: alg, Use: use}
 
 	if priv.IsPublic() || !pub.IsPublic() || !priv.Valid() || !pub.Valid() {
-		return "", "", "", nil, nil, errors.New("invalid keys were generated")
+		return publicKeyFormats, privateKeyFormats, "", errors.New("invalid keys were generated")
 	}
 
 	privJSONbs, err := priv.MarshalJSON()
 	if err != nil {
-		return "", "", "", nil, nil, errors.New("failed to marshal private key to JSON")
+		return publicKeyFormats, privateKeyFormats, "", errors.New("failed to marshal private key to JSON")
 	}
 
 	pubJSONbs, err := pub.MarshalJSON()
 	if err != nil {
-		return "", "", "", nil, nil, errors.New("failed to marshal public key to JSON")
+		return publicKeyFormats, privateKeyFormats, "", errors.New("failed to marshal public key to JSON")
 	}
 
-	return string(pubJSONbs), string(privJSONbs), kid, pubKey, privKey, nil
+	publicKeyFormats.Json = string(pubJSONbs)
+	publicKeyFormats.Pem, err = exportPublicKeyAsPEM(pubKey)
+	if err != nil {
+		return publicKeyFormats, privateKeyFormats, "", err
+	}
+
+	privateKeyFormats.Json = string(privJSONbs)
+	privateKeyFormats.Pem, err = exportPrivateKeyAsPemStr(privKey)
+	if err != nil {
+		return publicKeyFormats, privateKeyFormats, "", err
+	}
+
+	return publicKeyFormats, privateKeyFormats, "", nil
+}
+
+func exportPrivateKeyAsPemStr(privateKey interface{}) (string, error) {
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return "", errors.New("failed to marshal private key to PEM")
+	}
+
+	var typeString string
+
+	switch privateKey.(type) {
+	case *rsa.PrivateKey:
+		typeString = "RSA PRIVATE KEY"
+	case *ecdsa.PrivateKey:
+		typeString = "EC PRIVATE KEY"
+	case ed25519.PrivateKey:
+		typeString = "PRIVATE KEY"
+	default:
+		return "", fmt.Errorf("x509: unknown key type while marshaling PKCS#8: %T", privateKey)
+	}
+
+	privateKeyPem := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  typeString,
+			Bytes: privateKeyBytes,
+		},
+	)
+	return string(privateKeyPem), nil
+}
+
+func exportPublicKeyAsPEM(publicKey interface{}) (string, error) {
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return "", err
+	}
+
+	var typeString string
+
+	switch publicKey.(type) {
+	case *rsa.PublicKey:
+		typeString = "RSA PUBLIC KEY"
+	case *ecdsa.PublicKey:
+		typeString = "EC PUBLIC KEY"
+	case ed25519.PublicKey:
+		typeString = "PUBLIC KEY"
+	default:
+		return "", fmt.Errorf("x509: unknown key type while marshaling PKCS#8: %T", publicKey)
+	}
+
+	publicKeyPEM := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  typeString,
+			Bytes: publicKeyBytes,
+		},
+	)
+
+	return string(publicKeyPEM), nil
 }
