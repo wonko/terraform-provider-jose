@@ -12,6 +12,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+
 	jose "github.com/go-jose/go-jose/v3"
 )
 
@@ -151,32 +152,32 @@ func generateKey(use string, alg string, size int) (publicKeyFormats KeyFormat, 
 	pub := jose.JSONWebKey{Key: pubKey, KeyID: kid, Algorithm: alg, Use: use}
 
 	if priv.IsPublic() || !pub.IsPublic() || !priv.Valid() || !pub.Valid() {
-		return publicKeyFormats, privateKeyFormats, "", errors.New("invalid keys were generated")
+		return publicKeyFormats, privateKeyFormats, kid, errors.New("invalid keys were generated")
 	}
 
 	privJSONbs, err := priv.MarshalJSON()
 	if err != nil {
-		return publicKeyFormats, privateKeyFormats, "", errors.New("failed to marshal private key to JSON")
+		return publicKeyFormats, privateKeyFormats, kid, errors.New("failed to marshal private key to JSON")
 	}
 
 	pubJSONbs, err := pub.MarshalJSON()
 	if err != nil {
-		return publicKeyFormats, privateKeyFormats, "", errors.New("failed to marshal public key to JSON")
+		return publicKeyFormats, privateKeyFormats, kid, errors.New("failed to marshal public key to JSON")
 	}
 
 	publicKeyFormats.Json = string(pubJSONbs)
 	publicKeyFormats.Pem, err = exportPublicKeyAsPEM(pubKey)
 	if err != nil {
-		return publicKeyFormats, privateKeyFormats, "", err
+		return publicKeyFormats, privateKeyFormats, kid, err
 	}
 
 	privateKeyFormats.Json = string(privJSONbs)
 	privateKeyFormats.Pem, err = exportPrivateKeyAsPemStr(privKey)
 	if err != nil {
-		return publicKeyFormats, privateKeyFormats, "", err
+		return publicKeyFormats, privateKeyFormats, kid, err
 	}
 
-	return publicKeyFormats, privateKeyFormats, "", nil
+	return publicKeyFormats, privateKeyFormats, kid, nil
 }
 
 func exportPrivateKeyAsPemStr(privateKey interface{}) (string, error) {
