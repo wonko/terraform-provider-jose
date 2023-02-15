@@ -112,8 +112,9 @@ func NewEncryptionKey(alg jose.KeyAlgorithm, bits int) (crypto.PublicKey, crypto
 }
 
 type KeyFormat struct {
-	Json string
-	Pem  string
+	Json   string
+	Pem    string
+	Base64 string
 }
 
 func generateKey(use string, alg string, size int) (publicKeyFormats KeyFormat, privateKeyFormats KeyFormat, kid string, err error) {
@@ -156,27 +157,35 @@ func generateKey(use string, alg string, size int) (publicKeyFormats KeyFormat, 
 
 	privJSONbs, err := priv.MarshalJSON()
 	if err != nil {
-		return publicKeyFormats, privateKeyFormats, "", errors.New("failed to marshal private key to JSON")
+		return publicKeyFormats, privateKeyFormats, kid, errors.New("failed to marshal private key to JSON")
 	}
 
 	pubJSONbs, err := pub.MarshalJSON()
 	if err != nil {
-		return publicKeyFormats, privateKeyFormats, "", errors.New("failed to marshal public key to JSON")
+		return publicKeyFormats, privateKeyFormats, kid, errors.New("failed to marshal public key to JSON")
 	}
 
 	publicKeyFormats.Json = string(pubJSONbs)
 	publicKeyFormats.Pem, err = exportPublicKeyAsPEM(pubKey)
 	if err != nil {
-		return publicKeyFormats, privateKeyFormats, "", err
+		return publicKeyFormats, privateKeyFormats, kid, err
+	}
+	publicKeyFormats.Base64, err = exportPublicKeyAsBase64(pubKey)
+	if err != nil {
+		return publicKeyFormats, privateKeyFormats, kid, err
 	}
 
 	privateKeyFormats.Json = string(privJSONbs)
 	privateKeyFormats.Pem, err = exportPrivateKeyAsPemStr(privKey)
 	if err != nil {
-		return publicKeyFormats, privateKeyFormats, "", err
+		return publicKeyFormats, privateKeyFormats, kid, err
+	}
+	privateKeyFormats.Base64, err = exportPrivateKeyAsBase64(privKey)
+	if err != nil {
+		return publicKeyFormats, privateKeyFormats, kid, err
 	}
 
-	return publicKeyFormats, privateKeyFormats, "", nil
+	return publicKeyFormats, privateKeyFormats, kid, nil
 }
 
 func exportPrivateKeyAsPemStr(privateKey interface{}) (string, error) {
@@ -207,6 +216,15 @@ func exportPrivateKeyAsPemStr(privateKey interface{}) (string, error) {
 	return string(privateKeyPem), nil
 }
 
+func exportPrivateKeyAsBase64(privateKey interface{}) (string, error) {
+	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return "", errors.New("failed to marshal private key to PEM")
+	}
+
+	return convertBytesToBase64(privateKeyBytes), nil
+}
+
 func exportPublicKeyAsPEM(publicKey interface{}) (string, error) {
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {
@@ -234,4 +252,17 @@ func exportPublicKeyAsPEM(publicKey interface{}) (string, error) {
 	)
 
 	return string(publicKeyPEM), nil
+}
+
+func exportPublicKeyAsBase64(publicKey interface{}) (string, error) {
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return "", err
+	}
+
+	return convertBytesToBase64(publicKeyBytes), nil
+}
+
+func convertBytesToBase64(input []byte) string {
+	return base64.StdEncoding.EncodeToString(input)
 }

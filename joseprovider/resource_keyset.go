@@ -75,6 +75,16 @@ func resourceKeyset() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"public_key_base64": {
+				Description: "Generated public key (Base64-encoded binary)",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"private_key_base64": {
+				Description: "Generated private key (Base64-encoded binary)",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"id": {
 				Description: "Generated key id (kid).",
 				Type:        schema.TypeString,
@@ -113,6 +123,16 @@ func CreateKeyset(ctx context.Context, d *schema.ResourceData, m interface{}) di
 	}
 
 	err = d.Set("private_key_pem", privkey.Pem)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("public_key_base64", pubkey.Base64)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("private_key_base64", privkey.Base64)
 	if err != nil {
 		return diag.FromErr(err)
 	}
